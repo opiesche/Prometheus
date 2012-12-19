@@ -327,25 +327,26 @@ def measureSensors():
 ############################################################################################
 # turn on the pump, write time stamp and confidence to csv file
 # note that, if the csv file is new, we write the first line twice. This is to get around
-# a bug in mlab's CVS parser, that insists that it can't find valid data in this file if it
+# a bug in mlab's CSV parser, that insists that it can't find valid data in this file if it
 # has only one line
 def pumpOn(confidence):
-  
-  # write pump on times to csv file
-  strn = gTimeStr + ', '
-  strn += str(confidence)
-  newfile = False
-  
-  filename = '/var/www/Prometheus/data/' + gDateStr + '_pumpON.csv'
-  if os.path.exists(filename) is False:		### if it's a new file, insert the line twice below
-    newfile = True
 
-  with open(filename, 'a') as outfile:
-    outfile.write(strn + '\r\n')
-    if newfile is True:
-      outfile.write(strn + '\r\n')
+  if gLastPumpOffMinutesAgo<=gLastPumpOnMinutesAgo:	
+	  # write pump on times to csv file
+	  strn = gTimeStr + ', '
+	  strn += str(confidence)
+	  newfile = False
+  
+	  filename = '/var/www/Prometheus/data/' + gDateStr + '_pumpON.csv'
+	  if os.path.exists(filename) is False:		### if it's a new file, insert the line twice below
+	    newfile = True
 
-  os.system('ln -sf '+filename+' /var/www/Prometheus/data/current_pumpOn.csv')
+	  with open(filename, 'a') as outfile:
+	    outfile.write(strn + '\r\n')
+	    if newfile is True:
+	      outfile.write(strn + '\r\n')
+
+	  os.system('ln -sf '+filename+' /var/www/Prometheus/data/current_pumpOn.csv')
 
       
   print "Turning pump ON with a confidence of " + str(confidence)
@@ -360,25 +361,26 @@ def pumpOn(confidence):
 ############################################################################################
 # turn off the pump, write time stamp and confidence to csv file
 # note that, if the csv file is new, we write the first line twice. This is to get around
-# a bug in mlab's CVS parser, that insists that it can't find valid data in this file if it
+# a bug in mlab's CSV parser, that insists that it can't find valid data in this file if it
 # has only one line
 def pumpOff(confidence):
-	
-  # write pump off times to csv file
-  strn = gTimeStr + ', '
-  strn += str(-confidence)
-  newfile = False
 
-  filename = '/var/www/Prometheus/data/' + gDateStr + '_pumpOFF.csv'
-  if os.path.exists(filename) is False:
-    newfile = True
+  if gLastPumpOnMinutesAgo<=gLastPumpOffMinutesAgo:	
+	  # write pump off times to csv file
+	  strn = gTimeStr + ', '
+	  strn += str(-confidence)
+	  newfile = False
+
+	  filename = '/var/www/Prometheus/data/' + gDateStr + '_pumpOFF.csv'
+	  if os.path.exists(filename) is False:
+	    newfile = True
   
-  with open(filename, 'a') as outfile:
-    outfile.write(strn + '\r\n')
-    if newfile is True:
-      outfile.write(strn + '\r\n')
+	  with open(filename, 'a') as outfile:
+	    outfile.write(strn + '\r\n')
+	    if newfile is True:
+	      outfile.write(strn + '\r\n')
 
-  os.system('ln -sf '+filename+' /var/www/Prometheus/data/current_pumpOff.csv')
+	  os.system('ln -sf '+filename+' /var/www/Prometheus/data/current_pumpOff.csv')
 
 	
   print "Turning pump OFF with a confidence of " + str(confidence)

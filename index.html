@@ -70,27 +70,39 @@
 					curTuple[1] = data[i][6];
 					tempHistory.push(curTuple);
 				}
-				$.plot($("#main_plot"), [tempHistory], plotOptions);
+				getPumpOnHistory();
+				getCurrentTemp();
 			});
 
-			$.get("get_pump_on_history", function(data)
-			{
+		}
+
+		function getPumpOnHistory()
+		{
+                        $.get("get_pump_on_history", function(data)
+                        {
                                 for(var i in data)
                                 {
                                         datetime = new Date();
                                         datetime.setFullYear(data[i][0], data[i][1], data[i][2]);
                                         datetime.setHours(data[i][3], data[i][4], data[i][5]);
 
-					var confidence = data[i][6];
+                                        var confidence = data[i][6];
 
                                         curTuple = new Array(2);
                                         curTuple[0] = datetime;
                                         curTuple[1] = confidence;
                                         pumpOnHistory.push(curTuple);
+                                        curTuple = new Array(2);
+                                        curTuple[0] = datetime;
+                                        curTuple[1] = 90;
+                                        pumpOnHistory.push(curTuple);
+                                        curTuple = new Array(2);
+                                        curTuple[0] = datetime;
+                                        curTuple[1] = confidence;
+                                        pumpOnHistory.push(curTuple);
                                 }
-                                $.plot($("#main_plot"), [pumpOnHistory], scatterPlotOptions);
-			});
-
+				getCurrentTemp();
+                        });
 		}
 
 
@@ -122,11 +134,11 @@
 					curTuple[0] = sentTime;
 					curTuple[1] = gCurrentTemp;
 					tempHistory.push(curTuple);
-					$.plot($("#main_plot"), [{data:tempHistory, options:plotOptions}, {data:pumpOnHistory, lines:{show:false},points:{show:true, color:"#FF4444"} }]);
+					$.plot($("#main_plot"), [{data:tempHistory, options:plotOptions}, {data:pumpOnHistory, lines:{show:true},points:{show:true}, color:"#AA2222" }]);
 
 					displayCurrentTemp();
 						
-					if( pumpStatus=='1')
+					if( pumpStatus==1)
 						$("#current_pumpstatus_display").html("Pump is ON"); 
 					else
 						$("#current_pumpstatus_display").html("Pump is OFF"); 
