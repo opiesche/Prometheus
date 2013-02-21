@@ -27,8 +27,8 @@ gSensorErrorValue = -0.062
 gTotalAirWeightInPounds = 1386.0
 
 # weights various values have for confidence score computation
-gDtITWeight = 0.6
-gHeatGainWeight = 0.001
+gDtITWeight = 1.0
+gHeatGainWeight = 0.0018
 gTimeConfidenceWeight = 0.004
 gDirectionWeight = 0.3
 
@@ -45,7 +45,8 @@ gLastPumpOffMinutesAgo = 0
 gMinutesToTarget = 5.0
 gDateStr = ''
 gTimeStr = ''
-
+gTotalPumpOnTime = 0.0
+gTotalPumpOffTime = 0.0
 
 
 ############################################################################################
@@ -330,28 +331,30 @@ def measureSensors():
 # a bug in mlab's CSV parser, that insists that it can't find valid data in this file if it
 # has only one line
 def pumpOn(confidence):
+	global gLastPumpOffMinutesAgo, gLastPumpOnMinutesAgo, gTimeStr
 
-  if gLastPumpOffMinutesAgo<=gLastPumpOnMinutesAgo:	
-	  # write pump on times to csv file
-	  strn = gTimeStr + ', '
-	  strn += str(confidence)
-	  newfile = False
+  	# if pump is currently off
+	if gLastPumpOffMinutesAgo<=gLastPumpOnMinutesAgo:	
+		# write pump on times to csv file
+		strn = gTimeStr + ', '
+		strn += str(confidence)
+		newfile = False
   
-	  filename = '/var/www/Prometheus/data/' + gDateStr + '_pumpON.csv'
-	  if os.path.exists(filename) is False:		### if it's a new file, insert the line twice below
-	    newfile = True
+		filename = '/var/www/Prometheus/data/' + gDateStr + '_pumpON.csv'
+		if os.path.exists(filename) is False:		### if it's a new file, insert the line twice below
+			newfile = True
 
-	  with open(filename, 'a') as outfile:
-	    outfile.write(strn + '\r\n')
-	    if newfile is True:
-	      outfile.write(strn + '\r\n')
+		with open(filename, 'a') as outfile:
+			outfile.write(strn + '\r\n')
+			if newfile is True:
+				outfile.write(strn + '\r\n')
 
-	  os.system('ln -sf '+filename+' /var/www/Prometheus/data/current_pumpOn.csv')
+		os.system('ln -sf '+filename+' /var/www/Prometheus/data/current_pumpOn.csv')
 
       
-  print "Turning pump ON with a confidence of " + str(confidence)
-  #set GPIO pin 7 to high (pump on)
-  GPIO.output(7, True)
+	print "Turning pump ON with a confidence of " + str(confidence)
+	#set GPIO pin 7 to high (pump on)
+	GPIO.output(7, True)
 
 
 
@@ -364,6 +367,7 @@ def pumpOn(confidence):
 # a bug in mlab's CSV parser, that insists that it can't find valid data in this file if it
 # has only one line
 def pumpOff(confidence):
+  global gLastPumpOffMinutesAgo, gLastPumpOnMinutesAgo, gTimeStr
 
   if gLastPumpOnMinutesAgo<=gLastPumpOffMinutesAgo:	
 	  # write pump off times to csv file
@@ -390,19 +394,20 @@ def pumpOff(confidence):
 
 ############################################################################################
 def readTargetTemp():
+	global gTargetTemp
 	keyVal = {}
 	with open("target_temperature_value.conf", "r") as f:
 		line = f.readlines()[0]
 		k, v = line.strip().split('=')
-		gTargetTemperature =  float( v.strip() )
-		print "Target temperature configured as " + str(gTargetTemperature)
+		gTargetTemp =  float( v.strip() )
+		print "Target temperature configured as " + str(gTargetTemp)
 		f.close()
 
 
 	
 ############################################################################################
 def writeValues():
-  global gDateStr, gTimeStr, gSampleIntervalMin, gLastPumpOffMinutesAgo, gLastPumpOnMinutesAgo, gLastPumpOnTime, gLastPumpOffTime, gPumpConfidence
+  global gDateStr, gTimeStr, gSampleIntervalMin, gLastPumpOffMinutesAgo, gLastPumpOnMinutesAgo, gLastPumpOnTime, gLastPumpOffTime, gPumpConfidence, gTotalPumpOnTime, gTotalPumpOffTime
 
   try:
 	f = open("current_values.dat", 'w')
@@ -419,6 +424,8 @@ def writeValues():
 	f.write(str(gMeasuredRetainmentMin) + '\n')
 	f.write(str(gMeasuredLagMin) + '\n')
 	f.write(str(gMinutesToTarget) + '\n')
+	f.write(str(gTotalPumpOnTime) + '\n')
+	f.write(str(gTotalPumpOffTime) + '\n')
 
   except IOError:
 	print "Error opening file current_values.dat."  
@@ -427,7 +434,7 @@ def writeValues():
 
 ############################################################################################
 def controllerLoop():
-  global gDateStr, gTimeStr, gSampleIntervalMin, gLastPumpOffMinutesAgo, gLastPumpOnMinutesAgo, gLastPumpOnTime, gLastPumpOffTime, gPumpConfidence
+  global gDateStr, gTimeStr, gSampleIntervalMin, gLastPumpOffMinutesAgo, gLastPumpOnMinutesAgo, gLastPumpOnTime, gLastPumpOffTime, gPumpConfidence, gTotalPumpOnTime, gTotalPumpOffTime, gPumpConfidence
   
   
   print "Prometheus controller running."
@@ -443,21 +450,24 @@ def controllerLoop():
     readTargetTemp()    
     measureSensors()
     calcHeatLoss()
-    
     gPumpConfidence = getPumpConfidence()
+
     if gPumpConfidence>0.5:
+      print "turning pump on"
       pumpOn(gPumpConfidence)
       gLastPumpOnTime = datetime.datetime.now()
+#      gTotalPumpOffTime = gTotalPumpOffTime + gLastPumpOnTime-gLastPumpOffTime
     if gPumpConfidence<-0.5:
       pumpOff(gPumpConfidence)
       gLastPumpOffTime = datetime.datetime.now()
+#      gTotalPumpOnTime = gTotalPumpOnTime + gLastPumpOffTime-gLastPumpOnTime
 
     pumpTime = (datetime.datetime.now() - gLastPumpOffTime)
     gLastPumpOffMinutesAgo = pumpTime.seconds/60.0
-    pumpTime = (datetime.datetime.now() - gLastPumpOnTime)
+    pumpTime = (datetime.datetime.now() - gLastPumpOnTime) 
     gLastPumpOnMinutesAgo = pumpTime.seconds/60.0
 
-    estimateLag()
+
     writeValues()
     #plotGraphs()
     print "Sleeping."

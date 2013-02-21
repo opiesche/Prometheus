@@ -48,6 +48,7 @@
 		var gCurrentTemp = 0.0;
 		var tempHistory = new Array();
 		var pumpOnHistory = new Array();
+		var pumpOffHistory = new Array();
 		var curDate = new Date().getDay();
 
                 window.onload= function() { init(); }
@@ -71,6 +72,7 @@
 					tempHistory.push(curTuple);
 				}
 				getPumpOnHistory();
+				getPumpOffHistory();
 				getCurrentTemp();
 			});
 
@@ -78,7 +80,19 @@
 
 		function getPumpOnHistory()
 		{
-                        $.get("get_pump_on_history", function(data)
+			getPumpHistory("get_pump_on_history", pumpOnHistory);
+		}
+
+                function getPumpOffHistory()
+                {
+                        getPumpHistory("get_pump_off_history", pumpOffHistory);
+                }
+	
+
+
+		function getPumpHistory(url, targetArray)
+		{
+                        $.get(url, function(data)
                         {
                                 for(var i in data)
                                 {
@@ -90,18 +104,18 @@
 
                                         curTuple = new Array(2);
                                         curTuple[0] = datetime;
-                                        curTuple[1] = confidence;
-                                        pumpOnHistory.push(curTuple);
+                                        curTuple[1] = Math.min(confidence, 2.0);
+                                        targetArray.push(curTuple);
                                         curTuple = new Array(2);
                                         curTuple[0] = datetime;
                                         curTuple[1] = 90;
-                                        pumpOnHistory.push(curTuple);
+                                        targetArray.push(curTuple);
                                         curTuple = new Array(2);
                                         curTuple[0] = datetime;
-                                        curTuple[1] = confidence;
-                                        pumpOnHistory.push(curTuple);
+                                        curTuple[1] = Math.min(confidence, 2.0);
+                                        targetArray.push(curTuple);
                                 }
-				getCurrentTemp();
+				//getCurrentTemp();
                         });
 		}
 
@@ -121,6 +135,8 @@
 
 					gCurrentTemp = data['currentTemp'];
 
+					console.log("Pump confidence: ", pumpConfidence);
+
 
 					curTuple = new Array(2);
 					localDate = new Date();
@@ -130,11 +146,15 @@
 						console.log("resetting.");
 						curDate = date;
 						tempHistory = [];
+						pumpOnHistory = [];
+						pumpOffHistory = [];
 					}
 					curTuple[0] = sentTime;
 					curTuple[1] = gCurrentTemp;
 					tempHistory.push(curTuple);
-					$.plot($("#main_plot"), [{data:tempHistory, options:plotOptions}, {data:pumpOnHistory, lines:{show:true},points:{show:true}, color:"#AA2222" }]);
+					$.plot($("#main_plot"), [{data:tempHistory, options:plotOptions}, 
+								{data:pumpOnHistory, lines:{show:true}, points:{show:true}, color:"#AA2222" }, 
+								{data:pumpOffHistory, lines:{show:true}, points:{show:true}, color:"#2222AA" }  ]);
 
 					displayCurrentTemp();
 						

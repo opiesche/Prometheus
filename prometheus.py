@@ -58,7 +58,8 @@ def get_current_temp():
 	values['retainment'] = lines[5]
 	values['lag'] = lines[6]
 	values['timeToTarget'] = lines[7]
-
+	values['totalPumpOnTime'] = lines[8]
+	values['totalPumpOffTime'] = lines[9]
 	f.close()
 	return  values
 
@@ -97,7 +98,19 @@ def get_temp_history():
 
 @app.get('/get_pump_on_history')
 def get_pump_on_history():
-        f = open(pageroot+'data/current_pumpOn.csv', "r")
+	history = get_history('data/current_pumpOn.csv')
+	return history
+
+
+@app.get('/get_pump_off_history')
+def get_pump_off_history():
+        history = get_history('data/current_pumpOff.csv')
+        return history
+
+
+
+def get_history(filename):
+        f = open(pageroot+filename, "r")
         lines = f.readlines()
         history = {}
         del lines[0]
