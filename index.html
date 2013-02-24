@@ -32,7 +32,7 @@
    <script type="text/javascript">
 		var plotOptions = {
 			lines: {show:true},
-			xaxis: {mode:"time"},
+			xaxis: {mode:"time", timeformat:"%H:%M", timezone:"browser" },
 			yaxis: { min:10, max:100 }
 		};
 
@@ -64,7 +64,9 @@
 				{
 					datetime = new Date();
 					datetime.setFullYear(data[i][0], data[i][1], data[i][2]);
-					datetime.setHours(data[i][3], data[i][4], data[i][5]);
+					var hoursOff = datetime.getTimezoneOffset()/60;
+					var minutesOff = datetime.getTimezoneOffset() - (hoursOff*60);
+					datetime.setHours(data[i][3]-hoursOff, data[i][4]-minutesOff, data[i][5]);
 
 					curTuple = new Array(2);
 					curTuple[0] = datetime;
@@ -98,7 +100,9 @@
                                 {
                                         datetime = new Date();
                                         datetime.setFullYear(data[i][0], data[i][1], data[i][2]);
-                                        datetime.setHours(data[i][3], data[i][4], data[i][5]);
+                                        var hoursOff = datetime.getTimezoneOffset()/60;
+                                        var minutesOff = datetime.getTimezoneOffset() - (hoursOff*60);
+                                        datetime.setHours(data[i][3]-hoursOff, data[i][4]-minutesOff, data[i][5]);
 
                                         var confidence = data[i][6];
 
@@ -152,9 +156,9 @@
 					curTuple[0] = sentTime;
 					curTuple[1] = gCurrentTemp;
 					tempHistory.push(curTuple);
-					$.plot($("#main_plot"), [{data:tempHistory, options:plotOptions}, 
-								{data:pumpOnHistory, lines:{show:true}, points:{show:true}, color:"#AA2222" }, 
-								{data:pumpOffHistory, lines:{show:true}, points:{show:true}, color:"#2222AA" }  ]);
+					$.plot($("#main_plot"), [{data:tempHistory},
+								{data:pumpOnHistory, lines:{show:true}, points:{show:true}, color:"#AA2222"}, 
+								{data:pumpOffHistory, lines:{show:true}, points:{show:true}, color:"#2222AA"} ], plotOptions);
 
 					displayCurrentTemp();
 						
