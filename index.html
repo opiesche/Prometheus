@@ -136,6 +136,7 @@
 					var retainment = data['retainment'];
 					var lag = data['lag'];
 					var timeToTarget = data['timeToTarget'];
+					var totalPumpOnTime = data['totalPumpOnTime'];
 
 					gCurrentTemp = data['currentTemp'];
 
@@ -170,6 +171,7 @@
 					$("#current_retainment_display").html("Estimated retainment: " + retainment + " min"); 
 					$("#current_lag_display").html("Estimated lag: " + lag + " min"); 
 					$("#current_timetotarget_display").html("Time to reach target: " + timeToTarget + " min"); 
+					$("#current_totalpumpontime_display").html("Pump has been on " + totalPumpOnTime + "minutes in the last 24 hours");
 				}
 			);
 		}
@@ -286,9 +288,8 @@
 		<div align="right" class="image_wrapper fl_image" id="current_lag_display"> </div>
 		<div align="right" class="image_wrapper fl_image" id="current_retainment_display"> </div>
 		</p>
-		<p>
-		<div align="right" class="image_wrapper fl_image" id="current_timetotarget_display"> </div>
-		</p>
+		<p><div align="right" class="image_wrapper fl_image" id="current_timetotarget_display"> </div></p>
+		<p><div align="right" class="image_wrapper fl_image" id="current_totalpumpontime_display"> </div></p>
 					</td>
 					</tr>
 					</table>               

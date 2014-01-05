@@ -96,9 +96,9 @@ def getPumpConfidence():
     gMeasuredRetainmentMin = 5
   
   if gVirtualInteriorSensor.currentTemp<gTargetTemp:
-    timeConfidence = (gMinutesToTarget/gMeasuredLagMin) * gTimeConfidenceWeight
+    timeConfidence = gMeasuredLagMin*abs(gMinutesToTarget) * gTimeConfidenceWeight
   else:
-    timeConfidence = (gMinutesToTarget/gMeasuredRetainmentMin) * gTimeConfidenceWeight
+    timeConfidence = -gMeasuredRetainmentMin*abs(gMinutesToTarget) * gTimeConfidenceWeight
   
   
   
@@ -412,7 +412,7 @@ def writeValues():
   try:
 	f = open("current_values.dat", 'w')
 	f.write( gTimeStr + '\n')
-	f.write( str(gVirtualInteriorSensor.currentTemp) + '\n' )
+	f.write( str( round(gVirtualInteriorSensor.currentTemp, 1) ) + '\n' )
 	if gLastPumpOnMinutesAgo < gLastPumpOffMinutesAgo:
 		f.write( '1'  + '\n')
 		f.write(str(gLastPumpOnTime) + '\n')
@@ -421,11 +421,11 @@ def writeValues():
 		f.write(str(gLastPumpOffTime) + '\n')
 
 	f.write(str(gPumpConfidence) + '\n')
-	f.write(str(gMeasuredRetainmentMin) + '\n')
-	f.write(str(gMeasuredLagMin) + '\n')
-	f.write(str(gMinutesToTarget) + '\n')
-	f.write(str(gTotalPumpOnTime) + '\n')
-	f.write(str(gTotalPumpOffTime) + '\n')
+	f.write(str( round(gMeasuredRetainmentMin, 1) ) + '\n')
+	f.write(str( round(gMeasuredLagMin, 1) ) + '\n')
+	f.write(str( round(gMinutesToTarget, 1) ) + '\n')
+	f.write(str( round(gTotalPumpOnTime, 1) ) + '\n')
+	f.write(str( round(gTotalPumpOffTime, 1) ) + '\n')
 
   except IOError:
 	print "Error opening file current_values.dat."  
@@ -450,26 +450,36 @@ def controllerLoop():
     readTargetTemp()    
     measureSensors()
     calcHeatLoss()
+    estimateLag()
     gPumpConfidence = getPumpConfidence()
 
     if gPumpConfidence>0.5:
-      print "turning pump on"
       pumpOn(gPumpConfidence)
       gLastPumpOnTime = datetime.datetime.now()
-#      gTotalPumpOffTime = gTotalPumpOffTime + gLastPumpOnTime-gLastPumpOffTime
     if gPumpConfidence<-0.5:
       pumpOff(gPumpConfidence)
       gLastPumpOffTime = datetime.datetime.now()
-#      gTotalPumpOnTime = gTotalPumpOnTime + gLastPumpOffTime-gLastPumpOnTime
+
+
+    # reset pump time counters at midnight
+    if datetime.datetime.now().hour==0 and datetime.datetime.now().minute==0:
+	gTotalPumpOffTime = 0.0
+	gTotalPumpOnTime = 0.0
+
 
     pumpTime = (datetime.datetime.now() - gLastPumpOffTime)
     gLastPumpOffMinutesAgo = pumpTime.seconds/60.0
+    if gLastPumpOffMinutesAgo<gLastPumpOnMinutesAgo:
+	    gTotalPumpOffTime = gTotalPumpOffTime + gLastPumpOffMinutesAgo;
     pumpTime = (datetime.datetime.now() - gLastPumpOnTime) 
     gLastPumpOnMinutesAgo = pumpTime.seconds/60.0
+    if gLastPumpOnMinutesAgo<gLastPumpOffMinutesAgo:
+	    gTotalPumpOnTime = gTotalPumpOnTime + gLastPumpOnMinutesAgo;
 
 
     writeValues()
     #plotGraphs()
+    print "Pump on time: " + str(gTotalPumpOnTime) + "; off: " + str(gTotalPumpOffTime)
     print "Sleeping."
     time.sleep(gSampleIntervalMin*60)
     
